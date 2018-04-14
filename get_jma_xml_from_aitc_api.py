@@ -1,36 +1,28 @@
 import json
 import datetime
 from time import sleep
-import pycurl
-import io
+import urllib.request
 import os
 import codecs
 
-# set constant
-curl = pycurl.Curl()
-url_base = 'http://api.aitc.jp/jmardb-api/search'
-str_date_format = '%Y-%m-%d'
-str_date_format_log = '%Y-%m-%d %H:%M:%S'
-str_start = '2013-01-01'
-str_useragent = 'Mozilla/5.0'
-flg_debug = 1
 
-# set def
-def get_content(c, u):
-    buffer = io.BytesIO()
-
-    c.setopt(pycurl.URL, u)
-    c.setopt(pycurl.USERAGENT, str_useragent)
-    c.setopt(pycurl.CUSTOMREQUEST, 'GET')
-    c.setopt(pycurl.WRITEFUNCTION, buffer.write)
-
+def get_content(u):
+    res = ''
     try:
-        c.perform()
+        res = urllib.request.urlopen(u).read()
 
     except Exception as e:
         print(str(e))
 
-    return buffer.getvalue()
+    return res
+
+
+# set constant
+url_base = 'http://api.aitc.jp/jmardb-api/search'
+str_date_format = '%Y-%m-%d'
+str_date_format_dir = '%Y/%m/%d'
+str_date_format_log = '%Y-%m-%d %H:%M:%S'
+str_start = '2013-01-01'
 
 # today
 date_today = datetime.datetime.now()
@@ -47,14 +39,18 @@ while date_start < date_today:
 
     url_json = url_base \
         + '?datetime=' + datetime.datetime.strftime(date_start, str_date_format) \
-        + '&datetime=' + datetime.datetime.strftime(date_next, str_date_format)
+        + '&datetime=' + datetime.datetime.strftime(date_next, str_date_format) \
+        + '&order=old&limit=50'
 
     print(datetime.datetime.strftime(datetime.datetime.now(), str_date_format) + ' > ' + url_json)
+
+    dir_data = 'data/' + datetime.datetime.strftime(date_start, str_date_format_dir)
+    os.makedirs(dir_data, exist_ok=True)
 
     flg_next = True
     while flg_next is True:
         flg_next = False
-        dict_json = json.loads(get_content(curl, url_json))
+        dict_json = json.loads(get_content(url_json))
 
         # JSON loop
         for str_contents_key, contents in dict_json.items():
@@ -69,35 +65,32 @@ while date_start < date_today:
                             url_xml = str(str_entry_value)
 
                             # get XML
-                            str_filename = os.path.basename(url_xml) + '.xml'
+                            str_filename = dir_data + '/' + os.path.basename(url_xml) + '.xml'
 
                             if os.path.exists(str_filename) is False:
-                                str_xml = get_content(curl, url_xml).decode('utf-8')
+                                # create file
+                                str_xml = get_content(url_xml).decode('utf-8')
 
                                 file = codecs.open(str_filename, 'w', 'utf-8')
                                 file.write(str_xml)
                                 file.close()
-                            else:
-                                print('file exists.')
 
-            sleep(0.3)
+                                sleep(0.3)
 
             if str(str_contents_key) == 'paging':
                 # contents is dictionary
                 for str_paging_key, str_paging_value in contents.items():
                     # paging
                     if str(str_paging_key) == 'next':
+                        if str_paging_value is None:
+                            continue
                         url_json = str_paging_value
                         flg_next = True
-                        print(datetime.datetime.strftime(datetime.datetime.now(), str_date_format) + ' > ' + url_json)
-                        sleep(1)
+                        print(datetime.datetime.strftime(datetime.datetime.now()
+                                                         , str_date_format) + ' > ' + url_json)
 
     # slide days
     date_start = date_next
-
-    # debug
-    if flg_debug == 1:
-       break
 
 print('end')
 
