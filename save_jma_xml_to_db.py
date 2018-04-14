@@ -43,6 +43,9 @@ with psycopg2.connect(str_dbinfo) as conn:
                                 data = fp.read()
                                 fp.close()
 
+                                data = data.replace('<?xml version="1.0" encoding="UTF-8" standalone="no"?>'
+                                                    , '<?xml version="1.0" encoding="UTF-8"?>')
+
                                 cur.execute(sql, (str(file), str(data)))
                                 conn.commit()
                             except Exception as e:
