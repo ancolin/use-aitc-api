@@ -1,4 +1,5 @@
 import os
+from time import sleep
 import codecs
 import psycopg2
 from pathlib import Path
@@ -35,15 +36,21 @@ with psycopg2.connect(str_dbinfo) as conn:
                     if os.path.exists('data/' + path) is True:
                         print(path)
                         for file in files.glob(path + '/*.xml'):
+                            fp = None
+                            data = None
                             try:
-                                xml = codecs.open(str(file), 'r', 'utf-8')
-                                data = xml.read()
-                                xml.close()
+                                fp = codecs.open(str(file), 'r', 'utf-8')
+                                data = fp.read()
+                                fp.close()
 
                                 cur.execute(sql, (str(file), str(data)))
                                 conn.commit()
                             except Exception as e:
                                 conn.rollback()
+
+                            del fp
+                            del data
+                            sleep(0.1)
 
 print('end')
 
