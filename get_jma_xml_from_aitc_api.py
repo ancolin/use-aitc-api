@@ -16,21 +16,21 @@ str_useragent = 'Mozilla/5.0'
 flg_debug = 1
 
 # set def
-def getContent(c, u):
-  buffer = io.BytesIO()
+def get_content(c, u):
+    buffer = io.BytesIO()
 
-  c.setopt(pycurl.URL, u)
-  c.setopt(pycurl.USERAGENT, str_useragent)
-  c.setopt(pycurl.CUSTOMREQUEST, 'GET')
-  c.setopt(pycurl.WRITEFUNCTION, buffer.write)
+    c.setopt(pycurl.URL, u)
+    c.setopt(pycurl.USERAGENT, str_useragent)
+    c.setopt(pycurl.CUSTOMREQUEST, 'GET')
+    c.setopt(pycurl.WRITEFUNCTION, buffer.write)
 
-  try:
-    c.perform()
+    try:
+        c.perform()
 
-  except Exception as e:
-    print(str(e))
+    except Exception as e:
+        print(str(e))
 
-  return buffer.getvalue()
+    return buffer.getvalue()
 
 # today
 date_today = datetime.datetime.now()
@@ -43,62 +43,61 @@ print('start')
 # get JSON loop
 while date_start < date_today:
 
-  date_next = date_start + datetime.timedelta(days=1)
+    date_next = date_start + datetime.timedelta(days=1)
 
-  url_json = url_base \
-    + '?datetime=' + datetime.datetime.strftime(date_start, str_date_format) \
-    + '&datetime=' + datetime.datetime.strftime(date_next, str_date_format)
+    url_json = url_base \
+        + '?datetime=' + datetime.datetime.strftime(date_start, str_date_format) \
+        + '&datetime=' + datetime.datetime.strftime(date_next, str_date_format)
 
-  print(datetime.datetime.strftime(datetime.datetime.now(), str_date_format) + ' > ' + url_json)
+    print(datetime.datetime.strftime(datetime.datetime.now(), str_date_format) + ' > ' + url_json)
 
-  flg_next = True
-  while flg_next == True:
-    flg_next = False
-    dict_json = json.loads(getContent(curl, url_json))
+    flg_next = True
+    while flg_next is True:
+        flg_next = False
+        dict_json = json.loads(get_content(curl, url_json))
 
-    # JSON loop
-    for str_contents_key, contents in dict_json.items():
-      # contents
-      if str(str_contents_key) == 'data':
-        # contents is list
-        for dict_entry in contents:
-          # entries
-          for str_entry_key, str_entry_value in dict_entry.items():
-            # entry
-            if str(str_entry_key) == 'link':
-              url_xml = str(str_entry_value)
+        # JSON loop
+        for str_contents_key, contents in dict_json.items():
+            # contents
+            if str(str_contents_key) == 'data':
+                # contents is list
+                for dict_entry in contents:
+                    # entries
+                    for str_entry_key, str_entry_value in dict_entry.items():
+                        # entry
+                        if str(str_entry_key) == 'link':
+                            url_xml = str(str_entry_value)
 
-              # get XML
-              str_filename = os.path.basename(url_xml) + '.xml'
+                            # get XML
+                            str_filename = os.path.basename(url_xml) + '.xml'
 
-              if os.path.exists(str_filename) == False:
-                str_xml = getContent(curl, url_xml).decode('utf-8')
+                            if os.path.exists(str_filename) is False:
+                                str_xml = get_content(curl, url_xml).decode('utf-8')
 
-                file = codecs.open(str_filename, 'w', 'utf-8')
-                file.write(str_xml)
-                file.close()
-              else:
-                print('file exists.')
+                                file = codecs.open(str_filename, 'w', 'utf-8')
+                                file.write(str_xml)
+                                file.close()
+                            else:
+                                print('file exists.')
 
-          break
-          sleep(0.3)
+            sleep(0.3)
 
-      if str(str_contents_key) == 'paging':
-        # contents is dictionary
-        for str_paging_key, str_paging_value in contents.items():
-          # paging
-          if str(str_paging_key) == 'next':
-            url_json = str_paging_value
-            flg_next = True
-            print(datetime.datetime.strftime(datetime.datetime.now(), str_date_format) + ' > ' + url_json)
-            sleep(1)
+            if str(str_contents_key) == 'paging':
+                # contents is dictionary
+                for str_paging_key, str_paging_value in contents.items():
+                    # paging
+                    if str(str_paging_key) == 'next':
+                        url_json = str_paging_value
+                        flg_next = True
+                        print(datetime.datetime.strftime(datetime.datetime.now(), str_date_format) + ' > ' + url_json)
+                        sleep(1)
 
-  # slide days
-  date_start = date_next
+    # slide days
+    date_start = date_next
 
-  # debug
-  if flg_debug == 1:
-    break
+    # debug
+    if flg_debug == 1:
+       break
 
 print('end')
 
