@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  db:
+    image:  ancolin/postgresql:latest
+    volumes:
+      - '.:/var/lib/postgresql'
+    ports:
+      - '5432:5432'
